@@ -125,6 +125,9 @@ function M.func(opts, on_log, on_complete, session_ctx)
   if current_start_a <= #old_lines then
     vim.list_extend(patched_new_lines, vim.list_slice(old_lines, current_start_a, #old_lines))
   end
+  -- 🔕 Temporarily disable diagnostics when showing diff
+  vim.diagnostic.enable(false, { bufnr = bufnr })
+
   vim.api.nvim_buf_set_lines(bufnr, start_line - 1, end_line, false, patched_new_lines)
   Diff.add_visited_buffer(bufnr)
   Diff.process(bufnr)
@@ -160,12 +163,14 @@ function M.func(opts, on_log, on_complete, session_ctx)
     end)
     if not ok then
       on_complete(false, "User declined, reason: " .. (reason or "unknown"))
+      vim.diagnostic.enable(true, { bufnr = bufnr })
       return
     end
     vim.api.nvim_buf_set_lines(bufnr, start_line - 1, end_line, false, new_lines)
     vim.api.nvim_buf_call(bufnr, function() vim.cmd("noautocmd write") end)
     if session_ctx then Helpers.mark_as_not_viewed(opts.path, session_ctx) end
     on_complete(true, nil)
+    vim.diagnostic.enable(true, { bufnr = bufnr })
   end, { focus = not Config.behaviour.auto_focus_on_diff_view }, session_ctx)
 end
 
